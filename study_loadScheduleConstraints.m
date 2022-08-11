@@ -11,7 +11,7 @@
 % This script serves as a shell for performing parameter variation studies
 % for WEC load scheduling performance using the function m-file 
 % modelPredictiveLoadScheduling.m. The parameters to be varied are the 
-% upper limit and thelimit to the rate of change. The lower limit will be 
+% upper limit and the limit to the rate of change. The lower limit will be 
 % fixed as a fraction of the upper limit for each run of the study.
 %
 % This script is called as a function with the arguements
@@ -50,12 +50,14 @@
 function [] = study_loadScheduleConstraints(iVar,iSS,lbFrac)
 path_models = ['.' filesep 'Modeling'];
 addpath([path_models filesep 'Solvers'])
+addpath([path_models filesep 'Sea States'])
 addpath([path_models filesep 'WEC model']) 
 addpath([path_models filesep 'WEC model' filesep 'WECdata']) 
 addpath([path_models filesep 'Open-loop load schedule PTO']) 
 
 %% %%%%%%%%%%%%%%%%   SIMULATION PARAMETERS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Simulation length
+par.tramp = 100; % [s] excitation force ramp period
 par.tstart = 0; %[s] start time of simulation
 par.tend = 3000; %[s] end time of simulation
 
@@ -83,11 +85,13 @@ par = parameters_OLloadSchedule(par);
 y0 = [  0, ...
         0, ...
         zeros(1,par.WEC.ny_rad)];
+
+
     
 %% %%%% Model Predictive Load Scheduling (MPLS) Parameters %%%%%%%%%%%%%%%%
 par.dt_ctrl = 2;            % interval between control updates
 par.MPLS.tc = 10;                  % control horizon
-par.MPLS.tp = par.MPC.tc + 1.5*par.dt_ctrl;      % prediction horizon
+par.MPLS.tp = par.MPLS.tc + 1.5*par.dt_ctrl;      % prediction horizon
 
 %% %%%%%%%%%%%%   Study Variables  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 T_max = logspace(log10(1e5),log10(7e6),20);
@@ -101,6 +105,11 @@ tic_1 = tic; % record start time of optimization
 par.T_max = meshVar.T_max(iVar);        % [Nm] max PTO reaction torque
 par.dTdt_max = par.T_max/meshVar.deltat_Tmax(iVar);  % [Nm/s] max rate of change in WEC load
 par.T_min = par.T_max*lbFrac;           % [Nm] min PTO reaction torque
+
+% Update initial conditions post ramp
+Tpto = 0.5*(par.T_max+par.T_min);
+temp = model_OLloadSchedule(-par.tramp,y0,Tpto,par.tramp,par,4);
+y0 = temp(end,:); clearvars temp
 
 % Perform optimization
 [tMPLS,Tpto] = modelPredictiveLoadScheduling(y0,par);

@@ -16,6 +16,7 @@
 %   2 - perform a simulation for a state update through the control update
 %   step
 %   3 - evaluate constraints on the load schedule
+%   4 - Simulate duing ramp period to obtain settled ICs
 % The inputs include all variables to define a simulation and include a
 % specified load schedule.
 %
@@ -41,7 +42,7 @@
 %
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function varargout = model_OLloadcontrol(t,y,Tbar,tp,par,outputConfig)
+function varargout = model_OLloadSchedule(t,y,Tbar,tp,par,outputConfig)
     switch outputConfig
         case {1 3}
             % run simulation
@@ -72,6 +73,13 @@ function varargout = model_OLloadcontrol(t,y,Tbar,tp,par,outputConfig)
             end
             ceq = [];
             varargout = {c,ceq};
+
+        case 4
+            % run simulation
+            tspan = [0,par.tramp];
+            Tpto = @(tprime) Tpto_ramp(tprime-t,Tbar,par.dt_ctrl);
+            out = sim_OLloadSchedule(tspan,y,Tpto,par);
+            varargout = {out.y};
 
     end
 

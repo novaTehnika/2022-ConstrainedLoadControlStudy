@@ -41,6 +41,7 @@
 function [] = study_MPLSparameters(iVar)
 path_models = ['.' filesep 'Modeling'];
 addpath([path_models filesep 'Solvers'])
+addpath([path_models filesep 'Sea States'])
 addpath([path_models filesep 'WEC model'])
 addpath([path_models filesep 'WEC model' filesep 'WECdata'])
 addpath([path_models filesep 'Open-loop load schedule PTO'])

@@ -21,10 +21,9 @@ function [dydt, torqueFlap, waveElev] = flapModel(t,y, ptoTorque, par)
 % parameters outside the ODE solver. The file is also written for use in
 % a variable timestep ODE solver.
 % 7/9/2021 - added an exponential ramp in the excitation force so that the
-% simulation does not experience an impulse at t = 0. The peak wave period 
-% is used as the time constant. Therefore the effect of the ramp is
-% negligable after about four times the peak wave period.
-% 7/14/2022
+% simulation does not experience an impulse at t = 0. 
+% 08/02/2022 - added ramp period to par struct and included tstart so that
+% ramp ends at t=0;
 %
 % Copyright (C) 2022  Jeremy W. Simmons II
 % 
@@ -52,7 +51,7 @@ end
 waveElev = waveElevation(t,par);
     
 % Excitation Torque
-torqueFlap.wave = ramp(t,100)*excitationTorque(t,par);
+torqueFlap.wave = ramp(t-par.tstart,par.tramp)*excitationTorque(t,par);
     
 % Hydrostatic torque
 torqueFlap.hydroStatic = -hydroStaticTorque(y(1), waveElev, par);

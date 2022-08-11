@@ -87,7 +87,7 @@ for it = 1:nt-1
     x0 = [x(2:end) x(end)]; % next intial guess based on previous results
 
     % Update state
-    temp = model_OLloadSchedule(t(it),y,[Tpto(it) x(1)],[tc tp],par,3);
+    temp = model_OLloadSchedule(t(it),y,[Tpto(it) x(1)],[],par,3);
     y = temp(end,:);
     
     % display progress of the optimization
