@@ -41,6 +41,9 @@ function [t, Tpto] = modelPredictiveLoadScheduling(y0,par)
 % options = optimset('Display','iter','PlotFcns',@optimplotfval);
 options = optimoptions('fmincon');
 options.Display = 'iter';
+options.UseParallel = true;
+% options.Algorithm = 'sqp';
+% options.ScaleProblem = true;
 options.MaxFunEvals = 1e3;
 options.MaxIter = 1e2;
 %     options.TolFun = 1e-17;
@@ -92,5 +95,6 @@ for it = 1:nt-1
     
     % display progress of the optimization
     display([num2str(t(it)),'seconds of ',num2str(t(end))])
-    
+    display([num2str(x)])
+
 end

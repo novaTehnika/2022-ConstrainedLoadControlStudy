@@ -38,14 +38,17 @@
 clear
 clc
 path_models = ['.' filesep 'Modeling'];
+addpath([path_models filesep 'Sea States']) 
+addpath([path_models filesep 'Solvers']) 
 addpath([path_models filesep 'WEC model']) 
 addpath([path_models filesep 'WEC model' filesep 'WECdata']) 
-addpath([path_models filesep 'Open-loop load control PTO']) 
+addpath([path_models filesep 'Open-loop load schedule PTO']) 
 %% %%%%%%%%%%%%   SIMULATION PARAMETERS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% Simulation Parameters
+par.tramp = 100; % [s] excitation force ramp period
 par.tstart = 0; %[s] start time of simulation
-par.tend = 300; %[s] end time of simulation
+par.tend = 100; %[s] end time of simulation
 
 par.odeSolverRelTol = 1e-9; % Rel. error tolerance parameter for ODE solver
 par.odeSolverAbsTol = 1e-9; % Abs. error tolerance parameter for ODE solver
@@ -66,7 +69,7 @@ load('SSdata_HumboltBay_1D.mat')
 nSS = length(Tp);
 
 nVar1 = 1;
-Tcoulomb = 5e6;%1e6*logspace(log10(0.1),log10(20),nVar1);% [Nm] PTO reaction torque
+Tcoulomb = 1e6;%1e6*logspace(log10(0.1),log10(20),nVar1);% [Nm] PTO reaction torque
 
 saveSimData = 1;
 for iSS = 7%:nSS
@@ -113,7 +116,7 @@ for iSS = 7%:nSS
         %% test sim_OLloadSchedule with constant 
         if 0
         % define anonymous function for open-loop load control
-        Tpto = @(t) Tcoulomb(iVar1);   
+        Tpto = @(t) Tcoulomb(iVar1);
 
         % run simulation
         tic
@@ -130,8 +133,10 @@ for iSS = 7%:nSS
         %% test modelPredictiveLoadScheduling.m
         if 1
         % Load control parameters
+        lbFrac = 0.25;
         param.T_max = Tcoulomb(iVar1);
         param.dTdt_max = 1e6;
+        param.T_min = param.T_max*lbFrac;           % [Nm] min PTO reaction torque
         % Define intial conditions
         y0 = [  0, ...
                 0, ...
@@ -143,7 +148,7 @@ for iSS = 7%:nSS
         param.MPLS.tp = param.MPLS.tc + 1.5*param.dt_ctrl;  % prediction horizon
         
         ticMPLS = tic;
-        [tMPLS,Tpto] = MPLS_WECload(y0,param);
+        [tMPLS,Tpto] = modelPredictiveLoadScheduling(y0,param);
         toc(ticMPLS)
         
         figure; plot(tMPLS,Tpto)

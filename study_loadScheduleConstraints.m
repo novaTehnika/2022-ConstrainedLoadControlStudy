@@ -59,7 +59,7 @@ addpath([path_models filesep 'Open-loop load schedule PTO'])
 % Simulation length
 par.tramp = 100; % [s] excitation force ramp period
 par.tstart = 0; %[s] start time of simulation
-par.tend = 3000; %[s] end time of simulation
+par.tend = 1500; %[s] end time of simulation
 
 % Solver parameters
 par.odeSolverRelTol = 1e-9; % Rel. error tolerance parameter for ODE solver

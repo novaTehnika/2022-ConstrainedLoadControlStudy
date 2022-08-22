@@ -54,9 +54,15 @@ end
 %% Determine index from 2D variable mesh
 J = length(T_max);
 K = length(deltat_Tmax);
-j = 18; % T_max index
-k = 1; % deltat_Tmax index
+j = 11; % T_max index
+k = 4; % deltat_Tmax index
 i = K*(j-1) + k
+
+T_max(j)
+meshVar.T_max(i)
+deltat_Tmax(k)
+meshVar.deltat_Tmax(i)
+
 
 %%
 figure

@@ -9,9 +9,9 @@
 #SBATCH -o %A_%a.out
 #SBATCH -e %A_%a.err
 
-cd ~/MPCloadControl_25
+cd ~/MPCloadControl_00
 module load matlab
-matlab -nodisplay -r "study_loadScheduleConstraints(${SLURM_ARRAY_TASK_ID},7,0.25)"
+matlab -nodisplay -r "study_loadScheduleConstraints(${SLURM_ARRAY_TASK_ID},7,0.0)"
 
-# sbatch --array=1-100 study_loadScheduleConstraints_25.sh
-# dos2unix  study_loadScheduleConstraints_25.sh
+# sbatch --array=1-100 study_loadScheduleConstraints_00.sh
+# dos2unix  study_loadScheduleConstraints_00.sh
