@@ -46,7 +46,7 @@ addpath([path_models filesep 'Open-loop load schedule PTO'])
 %% %%%%%%%%%%%%   SIMULATION PARAMETERS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% Simulation Parameters
-par.tramp = 100; % [s] excitation force ramp period
+par.Tramp = 250; % [s] excitation force ramp period
 par.tstart = 0; %[s] start time of simulation
 par.tend = 100; %[s] end time of simulation
 
@@ -77,7 +77,8 @@ for iSS = 7%:nSS
     par.wave.Tp = Tp(iSS);
     
     % load parameters
-    par = parameters_OLloadSchedule(par);
+    par = parameters_OLloadSchedule(par,...
+    'nemohResults_vantHoff2009_20180802.mat','vantHoffTFCoeff.mat');
     
     for iVar1 = 1:nVar1
         param = par;
@@ -89,7 +90,7 @@ for iSS = 7%:nSS
         tend = param.tend;
         tspan = [tstart; tend];
 
-        % Define intial conditions
+        % Define intial conditions pre-ramp
         y0 = [  0, ...
                 0, ...
                 zeros(1,param.WEC.ny_rad)];
@@ -137,16 +138,23 @@ for iSS = 7%:nSS
         param.T_max = Tcoulomb(iVar1);
         param.dTdt_max = 1e6;
         param.T_min = param.T_max*lbFrac;           % [Nm] min PTO reaction torque
-        % Define intial conditions
-        y0 = [  0, ...
-                0, ...
-                zeros(1,param.WEC.ny_rad)];
 
         % Model predictive control parameters
         param.dt_ctrl = 2;          % interval between control updates
         param.MPLS.tc = 10;               % control horizon
         param.MPLS.tp = param.MPLS.tc + 1.5*param.dt_ctrl;  % prediction horizon
-        
+
+        % Define intial conditions pre-ramp
+        y0 = [  0, ...
+                0, ...
+                zeros(1,param.WEC.ny_rad)];
+
+        % Update initial conditions post-ramp
+        Tpto = 0.5*(param.T_max+param.T_min);
+        temp = model_OLloadSchedule([],y0,Tpto,[],param,4);
+        y0 = temp(end,:); clearvars temp
+
+        % Run MPLS
         ticMPLS = tic;
         [tMPLS,Tpto] = modelPredictiveLoadScheduling(y0,param);
         toc(ticMPLS)

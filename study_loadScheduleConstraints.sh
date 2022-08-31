@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH --nodes=1
-#SBATCH --ntasks=2
+#SBATCH --ntasks=3
 #SBATCH --mem=8gb
 #SBATCH -t 96:00:00
 #SBATCH --mail-type=ALL
@@ -11,7 +11,10 @@
 
 cd ~/MPCloadControl
 module load matlab
-matlab -nodisplay -r "study_loadScheduleConstraints(${SLURM_ARRAY_TASK_ID},7,0)"
+matlab -nodisplay -r \
+"parpool('local',$SLURM_JOB_CPUS_PER_NODE); \
+study_loadScheduleConstraints(${SLURM_ARRAY_TASK_ID},$SS)"
 
-# sbatch --array=1-100 study_loadScheduleConstraints.sh
+
+# sbatch --array=1-400 --export=SS=7 study_loadScheduleConstraints.sh
 # dos2unix  study_loadScheduleConstraints.sh

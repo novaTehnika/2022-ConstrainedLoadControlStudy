@@ -47,7 +47,7 @@
 %   along with this program. If not, see <https://www.gnu.org/licenses/>.
 %
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [] = study_loadScheduleConstraints(iVar,iSS,lbFrac)
+function [] = study_loadScheduleConstraints(iVar,iSS)
 path_models = ['.' filesep 'Modeling'];
 addpath([path_models filesep 'Solvers'])
 addpath([path_models filesep 'Sea States'])
@@ -57,9 +57,9 @@ addpath([path_models filesep 'Open-loop load schedule PTO'])
 
 %% %%%%%%%%%%%%%%%%   SIMULATION PARAMETERS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Simulation length
-par.tramp = 100; % [s] excitation force ramp period
+par.Tramp = 250; % [s] excitation force ramp period
 par.tstart = 0; %[s] start time of simulation
-par.tend = 1500; %[s] end time of simulation
+par.tend = 2000; %[s] end time of simulation
 
 % Solver parameters
 par.odeSolverRelTol = 1e-9; % Rel. error tolerance parameter for ODE solver
@@ -67,7 +67,7 @@ par.odeSolverAbsTol = 1e-9; % Abs. error tolerance parameter for ODE solver
 par.MaxStep = 1e-2; % Step size in the case of fixed step size solver
 
 % Wave construction parameters
-par.WEC.nw = 100; % num. of frequency components for harmonic superposition 
+par.WEC.nw = 1000; % num. of frequency components for harmonic superposition 
 par.wave.rngSeedPhase = 3; % seed for the random number generator
 
 % Sea State specification
@@ -79,24 +79,25 @@ par.wave.Hs = Hs(iSS);
 par.wave.Tp = Tp(iSS);
 
 % load remaining parameters
-par = parameters_OLloadSchedule(par);
+par = parameters_OLloadSchedule(par,...
+    'nemohResults_vantHoff2009_20180802.mat','vantHoffTFCoeff.mat');
 
 % Define intial conditions
 y0 = [  0, ...
         0, ...
         zeros(1,par.WEC.ny_rad)];
 
-
-    
 %% %%%% Model Predictive Load Scheduling (MPLS) Parameters %%%%%%%%%%%%%%%%
 par.dt_ctrl = 2;            % interval between control updates
 par.MPLS.tc = 10;                  % control horizon
 par.MPLS.tp = par.MPLS.tc + 1.5*par.dt_ctrl;      % prediction horizon
 
 %% %%%%%%%%%%%%   Study Variables  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-T_max = logspace(log10(1e5),log10(7e6),20);
-deltat_Tmax = logspace(log10(3),log10(30),5);
-[meshVar.T_max,meshVar.deltat_Tmax] = meshgrid(T_max,deltat_Tmax);
+T_max = logspace(log10(1e5),log10(7e6),25);
+deltat_Tmax = logspace(log10(0.3),log10(300),4);
+lbFrac = [0 0.25 0.5 0.75];
+[meshVar.T_max,meshVar.deltat_Tmax,meshVar.lbFrac] = ...
+                                        meshgrid(T_max,deltat_Tmax,lbFrac);
 
 %% %%%%%%%%%%%%   COLLECT DATA  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic_1 = tic; % record start time of optimization
@@ -104,11 +105,11 @@ tic_1 = tic; % record start time of optimization
 % Load control parameters
 par.T_max = meshVar.T_max(iVar);        % [Nm] max PTO reaction torque
 par.dTdt_max = par.T_max/meshVar.deltat_Tmax(iVar);  % [Nm/s] max rate of change in WEC load
-par.T_min = par.T_max*lbFrac;           % [Nm] min PTO reaction torque
+par.T_min = par.T_max*meshVar.lbFrac(iVar);           % [Nm] min PTO reaction torque
 
 % Update initial conditions post ramp
 Tpto = 0.5*(par.T_max+par.T_min);
-temp = model_OLloadSchedule(-par.tramp,y0,Tpto,par.tramp,par,4);
+temp = model_OLloadSchedule([],y0,Tpto,[],par,4);
 y0 = temp(end,:); clearvars temp
 
 % Perform optimization

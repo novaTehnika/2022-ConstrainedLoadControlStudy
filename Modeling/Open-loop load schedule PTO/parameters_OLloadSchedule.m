@@ -31,10 +31,10 @@
 %   along with this program. If not, see <https://www.gnu.org/licenses/>.
 %
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function par = parameters_OLloadSchedule(par)    
+function par = parameters_OLloadSchedule(par,filenameCoeff,filenameRadSS)
      % fluid and entrianed gas properties
     par.rho = 1023; % [kg/m3] density of air
-    par.mu = 9.4e-4; % [Pa-s]  Kinematic (absolute) viscosity
+    par.mu = 9.4e-4; % [Pa-s] Dynamic (absolute) viscosity
     par.beta = 2.2e9; % [Pa]  Bulk Modulus of air free fluid
     par.p_vap = 0.037e5; % [Pa] vapour pressure of seawater
     par.R = 0.0001; % [-] fraction  Baseline fraction of air by volume entrained in the hydraulic fluid at atm
@@ -42,6 +42,6 @@ function par = parameters_OLloadSchedule(par)
     par.gamma = 1.4; % [-]ratio of specific heats for air
     
      % WEC parameters
-    par = parameters_WECmodel(par);
+    par = parameters_WECmodel(par,filenameCoeff,filenameRadSS);
 
 end

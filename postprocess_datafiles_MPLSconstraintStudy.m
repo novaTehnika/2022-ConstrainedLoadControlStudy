@@ -31,13 +31,16 @@ for j = 1:nfiles
     end
 
 end
+
+try
 jobArrayStr = num2str(notDone(1));
 for j = 2:length(notDone)
     jobArrayStr = append(jobArrayStr,[',',num2str(notDone(j))]);
         PP_array(notDone(j)) = nan;
         dur_array(notDone(j)) = nan;
 end
-
+catch
+end
 
 
 
@@ -51,17 +54,6 @@ for j = 1:J
     end
 end
 
-%% Determine index from 2D variable mesh
-J = length(T_max);
-K = length(deltat_Tmax);
-j = 11; % T_max index
-k = 4; % deltat_Tmax index
-i = K*(j-1) + k
-
-T_max(j)
-meshVar.T_max(i)
-deltat_Tmax(k)
-meshVar.deltat_Tmax(i)
 
 
 %%
@@ -70,13 +62,15 @@ scatter3(meshVar.deltat_Tmax(:),meshVar.T_max(:),1e-3*PP_array)
 xlabel('max rate of change, from min to max (s)')
 ylabel('Torque, max (Nm)')
 zlabel('mean power absorbed (kW)')
+title([num2str(lbFrac) ,' turndown'])
 
-figure
-scatter3(meshVar.deltat_Tmax(:),meshVar.T_max(:),1/60*dur_array)
-xlabel('max rate of change, from min to max (s)')
-ylabel('Torque, max (Nm)')
-zlabel('optimization duration (min)')
+% figure
+% scatter3(meshVar.deltat_Tmax(:),meshVar.T_max(:),1/60*dur_array)
+% xlabel('max rate of change, from min to max (s)')
+% ylabel('Torque, max (Nm)')
+% zlabel('optimization duration (min)')
 
+return
 
 %%
 
@@ -91,6 +85,18 @@ end
 
 legend(['turndown rate = ',num2str(deltat_Tmax(1)),' seconds'],...
     ['turndown rate = ',num2str(deltat_Tmax(K-1),2),' seconds'])
+
+%% Determine index from 2D variable mesh
+J = length(T_max);
+K = length(deltat_Tmax);
+j = 11; % T_max index
+k = 4; % deltat_Tmax index
+i = K*(j-1) + k
+
+T_max(j)
+meshVar.T_max(i)
+deltat_Tmax(k)
+meshVar.deltat_Tmax(i)
 
 %% add Coulomb damping results
 SS=7;

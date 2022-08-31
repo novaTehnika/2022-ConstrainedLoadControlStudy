@@ -24,6 +24,7 @@ function T_hydroStatic = hydroStaticTorque(theta, h_wave, par)
 % by the author. The file is rewritten to take a 
 % structure of parameters as an input instead of using hard coded 
 % variables.
+% 8/23/2022 - added position measurement for center of mass
 %
 % Copyright (C) 2022  Jeremy W. Simmons II
 % 
@@ -48,23 +49,22 @@ function T_hydroStatic = hydroStaticTorque(theta, h_wave, par)
 % Height of top edge of flap from hinge
 h_top = par.WEC.L_flap*cos(theta);
 
-% calculate centroids from thin plate assumption
-% if h_top > par.WEC.h+h_wave
-    L_sub = (h_top > par.WEC.h+h_wave)*(par.WEC.h+h_wave)/cos(theta) + ...
-        (h_top <= par.WEC.h+h_wave)*par.WEC.L_flap; %length of submerged part of plate (by centerline)
-% else
-%     L_sub = ;
-% end 
+% Length of submerged part of plate (by centerline) centroids 
+% from thin plate assumption
+L_sub = (h_top > par.WEC.h+h_wave)*(par.WEC.h+h_wave)/cos(theta) + ...
+    (h_top <= par.WEC.h+h_wave)*par.WEC.L_flap; 
 
-% Calculate the centroid of the buoyant force 
+% Calculate the centroid of the buoyant force, position perpendicular to
+% gravity
 centroid_x = L_sub/2*sin(theta);
 
 % calculate bouyant torque
 T_buoy = par.WEC.T*L_sub*par.WEC.W*par.WEC.rho*par.WEC.g*centroid_x;
 
 %% Determine torque due to off center weight
-% Calculate the center of mass of the flap
-cm_x = par.WEC.L_flap/2*sin(theta);
+% Calculate position of the center of mass of the flap, perpendicular to
+% gravity
+cm_x = par.WEC.L_cm*sin(theta);
 
 % calculate torque due to weight
 T_weight = par.WEC.m*par.WEC.g*cm_x;

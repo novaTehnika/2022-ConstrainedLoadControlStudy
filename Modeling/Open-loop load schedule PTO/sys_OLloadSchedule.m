@@ -52,7 +52,7 @@ dydt(iyrad) = dydt_WEC(3:end); % radiation damping states for WEC model
 
 %% %%%%%%%%%%%%   FUNCTIONS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     function nonState = nonStateVars(t,y,par)
-        nonState.T_pto = (abs(y(iytheta_dot)) > 1e-2)* ...
+        nonState.T_pto = (abs(y(iytheta_dot)) > 5e-3)* ...
                         -sign(y(iytheta_dot))*par.Tcoulomb;
     end
 end

@@ -75,9 +75,9 @@ function varargout = model_OLloadSchedule(t,y,Tbar,tp,par,outputConfig)
             varargout = {c,ceq};
 
         case 4
-            % run simulation
-            tspan = [0,par.tramp];
-            Tpto = @(tprime) Tpto_ramp(tprime-t,Tbar,par.dt_ctrl);
+            % run simulation for initial condition following ramp period
+            tspan = par.tstart+[-par.Tramp,0];
+            Tpto = @(tprime) Tpto_ramp(tprime-tspan(1),Tbar,par.dt_ctrl);
             out = sim_OLloadSchedule(tspan,y,Tpto,par);
             varargout = {out.y};
 

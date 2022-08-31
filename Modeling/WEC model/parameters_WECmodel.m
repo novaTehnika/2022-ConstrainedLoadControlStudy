@@ -1,4 +1,4 @@
-function par = parameters_WECmodel(par)
+function par = parameters_WECmodel(par,filenameCoeff,filenameRadSS)
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % parameters_WECmodel.m function m-file
 % AUTHORS: 
@@ -31,6 +31,9 @@ function par = parameters_WECmodel(par)
 % generating wave elevation timeseries and excitation force. This method 
 % involves interpolation of the excitation force. Additions include the use
 % of nested functions for the wave spectrum and obj. func.
+% 8/23/2022 - added position measurement for center of mass and corrected
+% moment of inertia calculation to include effect of parallel axis (value
+% for MOI specified is about center of mass).
 %
 % Copyright (C) 2022  Jeremy W. Simmons II
 % 
@@ -50,21 +53,25 @@ function par = parameters_WECmodel(par)
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Load saved WEC parameters
-load('nemohResults_vantHoff2009_20180802.mat','OSWC_vantHoff2009_simmons')
-par.imprt.WEC.w = OSWC_vantHoff2009_simmons.w;          % [rad/s] frequency
-par.imprt.WEC.F_amp = OSWC_vantHoff2009_simmons.F_amp;  % [Nm/m] frequency dependent excitation torque amplitude coefficient
-par.imprt.WEC.phi_e = OSWC_vantHoff2009_simmons.phi_e;  % [rad] frequency dependent phase of excitation torque
-par.imprt.WEC.I_inf = OSWC_vantHoff2009_simmons.A_inf(1);  % [kgm^2] added mass at infinite frequency
+% load('nemohResults_vantHoff2009_20180802.mat','OSWC_vantHoff2009')
+load(filenameCoeff,'OSWC_vantHoff2009')
+par.imprt.WEC.w = OSWC_vantHoff2009.w;          % [rad/s] frequency
+par.imprt.WEC.F_amp = OSWC_vantHoff2009.F_amp;  % [Nm/m] frequency dependent excitation torque amplitude coefficient
+par.imprt.WEC.phi_e = OSWC_vantHoff2009.phi_e;  % [rad] frequency dependent phase of excitation torque
+par.imprt.WEC.I_inf = OSWC_vantHoff2009.A_inf(1);  % [kgm^2] added mass at infinite frequency
 par.WEC.I_inf = par.imprt.WEC.I_inf;
-load('vantHoffTFCoeff_v2.mat','KradDen','KradNum')
-par.WEC.a = KradDen';     % transfer funciton denominator coefficients for raditation damping derived to approximate the hydrodynamic response
-par.WEC.b = KradNum';     % transfer funciton numerator coefficients for raditation damping derived to approximate the hydrodynamic response
+% load('vantHoffTFCoeff_v2.mat','KradDen','KradNum')
+load(filenameRadSS,'KradDen','KradNum')
+par.WEC.a = KradDen';     % transfer function denominator coefficients for raditation damping derived to approximate the hydrodynamic response
+par.WEC.b = KradNum';     % transfer function numerator coefficients for raditation damping derived to approximate the hydrodynamic response
 par.WEC.L_flap = 11;      % [m] length of flap (hinge to top edge)
 par.WEC.T = 2;            % [m] flap thickness
-par.WEC.h = 8.9;          % [m] mean water depth
+par.WEC.h = 8.9;          % [m] mean water depth to hinge
 par.WEC.W = 18;           % [m] flap width
+par.WEC.L_cm = 5;         % [m] distance of center of mass from hinge
 par.WEC.m = 127000;       % [kg] mass of flap
-par.WEC.I = 1.85e6+0*par.WEC.m*3.9^2;     % [kgm^2] mom. of inertia of flap
+I = 1.85e6;     % [kgm^2] mom. of inertia of flap about center of mass
+par.WEC.I = I + par.WEC.m*par.WEC.L_cm^2; % [kgm^2] mom. of inertia of flap about hinge
 par.WEC.rho = 1025;       % [kg/m^3] density of sea water
 par.WEC.g = 9.81;         % [m/s^2] gravitational acceleration at sea level
 
@@ -84,40 +91,40 @@ par.WEC.B_rad = [zeros(par.WEC.ny_rad-length(par.WEC.b),1); ...
  % determine the area under the curve of the wave spectrum for
  % discretization
   % high density grid of frequencies evenly spaced
-w = linspace(par.imprt.WEC.w(1),par.imprt.WEC.w(end),1000); 
-
+w = linspace(par.imprt.WEC.w(1),par.imprt.WEC.w(end),1e6); 
   % wave spectrum calculated for high-density even grid
 S_w = PiersonSpec(w,par);
-
   % area for each bin
 a = trapz(w,S_w)/(par.WEC.nw+1);
 
   % calculate the cumulative area under the curve
 A = cumtrapz(w,S_w);
-        
- % determine the frequencies of the equal area grid using optimization of 
- % an obj. function involving the error between the target area under the
- % curve and the area calculated from the tested frequency
+
+ % determine the frequencies for an equal area grid by finding upper and
+ % lower bounds for the bins
 par.WEC.w = zeros(par.WEC.nw,1);
 par.WEC.dw = zeros(par.WEC.nw,1);
-wmax = par.imprt.WEC.w(end);
+w_lb = zeros(par.WEC.nw,1); % lower bound for each bin
+w_ub = zeros(par.WEC.nw,1); % upper bound for each bin
+  % min freq. set to a significant value
+wmin = w(find(A >= 0.01*a,1,'first')); 
+  % max freq. set to a significant value
+wmax = w(find(A <= (A(end) - 0.01*a),1,'last')); % max freq. set to a significant value
 for iw = 1:par.WEC.nw
-    if iw == 1 % set wmin to min frequency in range considered
-        wmin = par.imprt.WEC.w(1);
-    else % set wmin to right bound of previous bin
-        wmin = par.WEC.w(iw-1) + par.WEC.dw(iw-1)/2;
+    % set lower bound
+    if iw == 1
+        w_lb(iw) = wmin;
+    else
+        w_lb(iw) = w_ub(iw-1);
     end
-    Atarget = a*iw; % target cumlative area under the curve (integral)
-    
-    % solve for the root for the difference between Atarget and A
-    par.WEC.w(iw) = ...
-        fzero(@(w_ea) Atarget - interp1(w,A,w_ea,'spline'),...
-        (wmax - wmin)/10);
-    
-    % calculate the width of the bin based on the target area and the value
-    % for the spectrum density function at this frequency 
-	par.WEC.dw(iw) = a/PiersonSpec(par.WEC.w(iw),par);
-
+    % find upper bound to satisfy area increment
+    if iw == par.WEC.nw
+        w_ub(iw) = wmax;
+    else
+       w_ub(iw) = w(find(A >= a*iw,1,'first'));
+    end
+	par.WEC.dw(iw) = w_ub(iw) - w_lb(iw);
+    par.WEC.w(iw) =  (w_ub(iw) + w_lb(iw))/2;
 end
 
 % calculate the wave spectrum for the equal area frequencies
@@ -125,10 +132,13 @@ par.wave.S_w = PiersonSpec(par.WEC.w,par);
 
 % interpolate frequency dependent coefficients
  % frequency dependent excitation torque amplitude coefficient
-par.WEC.F_amp = interp1(par.imprt.WEC.w,par.imprt.WEC.F_amp,par.WEC.w,'spline');
+par.WEC.F_amp = ...
+    interp1(par.imprt.WEC.w,par.imprt.WEC.F_amp,par.WEC.w,'linear');
 
  % frequency dependent phase of excitation torque
-par.WEC.phi_e = interp1(par.imprt.WEC.w,par.imprt.WEC.phi_e,par.WEC.w,'spline');
+par.WEC.phi_e = ...
+    interp1(par.imprt.WEC.w,par.imprt.WEC.phi_e,par.WEC.w,'linear');
+
 
 % generate random phases for each frequency component for the wave elevation
  % seed the random number generator
@@ -143,8 +153,10 @@ if par.WEC.nw == 1
     par.wave.S_w = 0.5*par.wave.Hs^2;
     par.WEC.dw = 1;
     par.WEC.w = 2*pi/par.wave.Tp;
-    par.WEC.F_amp = interp1(par.imprt.WEC.w,par.imprt.WEC.F_amp,par.WEC.w,'spline');
-    par.WEC.phi_e = interp1(par.imprt.WEC.w,par.imprt.WEC.phi_e,par.WEC.w,'spline');
+    par.WEC.F_amp = ...
+        interp1(par.imprt.WEC.w,par.imprt.WEC.F_amp,par.WEC.w,'linear');
+    par.WEC.phi_e = ...
+        interp1(par.imprt.WEC.w,par.imprt.WEC.phi_e,par.WEC.w,'linear');
     par.WEC.phi = 0;
 end
 
@@ -162,7 +174,7 @@ end
     function S_w = PiersonSpec(w,par)
         % Based on Falnes (2002) "Ocean Waves and Oscillating Systems:..."
         S_w = 10*pi^5*par.wave.Hs^2/par.wave.Tp^4./w.^5 ... 
-            .*exp(-20*pi^4/par.wave.Tp^4./w.^4);
+            .*exp(-20*pi^4/par.wave.Tp^4./w.^4)/(2*pi);
     end
 
 end

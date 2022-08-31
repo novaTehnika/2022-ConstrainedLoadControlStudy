@@ -58,37 +58,37 @@ function out = sim_OLloadSchedule(tspan,y0,Tpto,par)
     nt = length(t); % number of time steps
 
     % Extract system states from simulation results
-    out.t = t;
+%     out.t = t;
     out.y = y;
     
-    out.theta = y(:,1); % [rad] position of the WEC
+%     out.theta = y(:,1); % [rad] position of the WEC
     out.theta_dot = y(:,2); % [rad/s] angular velocity of the WEC
     
     % Post-process non-state variables and state derivatives
     syspost = @(t,y,par) sysPost(t,y,Tpto,par);
     
     parfor it = 1:nt 
-        [dydt(it,:), nonState(it)] = syspost(t(it),y(it,:),par); 
+        [~, nonState(it)] = syspost(t(it),y(it,:),par); 
         
         % Move WEC torque results up a level in nonState stucture so that
         % they can be used like arrays in assiging to the output structure
-        temp(it).T_hydroStatic = nonState(it).torqueWEC.hydroStatic;
-        temp(it).T_wave = nonState(it).torqueWEC.wave;
-        temp(it).T_rad = nonState(it).torqueWEC.radiation;  
+%         temp(it).T_hydroStatic = nonState(it).torqueWEC.hydroStatic;
+%         temp(it).T_wave = nonState(it).torqueWEC.wave;
+%         temp(it).T_rad = nonState(it).torqueWEC.radiation;  
                     
     end
 
     % State derivatives
-    out.dydt = dydt;
+%     out.dydt = dydt;
     
      % System input: wave elevation
-    out.waveElev = [nonState(:).waveElev]';
+%     out.waveElev = [nonState(:).waveElev]';
     
      % forces on WEC
     out.T_pto = [nonState(:).T_pto]';
-    out.T_hydroStatic = [temp(:).T_hydroStatic]';
-    out.T_wave = [temp(:).T_wave]';
-    out.T_rad = [temp(:).T_rad]';
+%     out.T_hydroStatic = [temp(:).T_hydroStatic]';
+%     out.T_wave = [temp(:).T_wave]';
+%     out.T_rad = [temp(:).T_rad]';
         
 %% Post-process analysis
     %% Energy analysis

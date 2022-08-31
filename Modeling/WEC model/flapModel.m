@@ -51,7 +51,8 @@ end
 waveElev = waveElevation(t,par);
     
 % Excitation Torque
-torqueFlap.wave = ramp(t-par.tstart,par.tramp)*excitationTorque(t,par);
+t0 = par.tstart-par.Tramp;
+torqueFlap.wave = ramp(t-t0,par.Tramp)*excitationTorque(t,par);
     
 % Hydrostatic torque
 torqueFlap.hydroStatic = -hydroStaticTorque(y(1), waveElev, par);
@@ -73,8 +74,6 @@ dydt(2) = 1/(par.WEC.I + par.WEC.I_inf) ...
 %% %%%%%%%%%%%%   FUNCTIONS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     function T_e = excitationTorque(t,par)
-%         T_e = (1-exp(-(t-0.0*par.wave.Tp)/(par.wave.Tp/5)))*sum( par.WEC.F_amp.*sqrt(2*par.wave.S_w.*par.WEC.dw) ...
-%                        .*sin(par.WEC.w*t + par.wave.phi + par.WEC.phi_e ));
         T_e = sum( par.WEC.F_amp.*sqrt(2*par.wave.S_w.*par.WEC.dw) ...
                        .*sin(par.WEC.w*t + par.wave.phi + par.WEC.phi_e ));
     end
@@ -84,11 +83,9 @@ dydt(2) = 1/(par.WEC.I + par.WEC.I_inf) ...
                             .*sin(par.WEC.w(:)*t + par.wave.phi(:)) );
     end
     
-    function f = ramp(t,tr)
-        f = (t<tr)*0.5*(1+cos(pi+pi*t/tr)) + ...
-            (t>=tr);
+    function f = ramp(t,Tr)
+        f = (t<Tr)*0.5.*(1+cos(pi+pi*t/max(Tr,eps))) + ...
+            (t>=Tr);
     end
-%     function T_hydroStatic = hydroStaticTorque(theta, h_wave, par)
-%         T_hydroStatic = hydroStaticTorque(theta, h_wave, par);
-%     end
+
 end

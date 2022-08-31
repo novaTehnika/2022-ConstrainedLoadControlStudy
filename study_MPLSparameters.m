@@ -38,7 +38,7 @@
 %   along with this program. If not, see <https://www.gnu.org/licenses/>.
 %
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [] = study_MPLSparameters(iVar)
+function [] = study_MPLSparameters(iVar,iSS)
 path_models = ['.' filesep 'Modeling'];
 addpath([path_models filesep 'Solvers'])
 addpath([path_models filesep 'Sea States'])
@@ -48,15 +48,17 @@ addpath([path_models filesep 'Open-loop load schedule PTO'])
 
 %% %%%%%%%%%%%%   SIMULATION PARAMETERS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Simulation length
+par.Tramp = 250; % [s] excitation force ramp period
 par.tstart = 0; %[s] start time of simulation
-par.tend = 300; %[s] end time of simulation
+par.tend = 500; %[s] end time of simulation
 
+% Solver parameters
 par.odeSolverRelTol = 1e-9; % Rel. error tolerance parameter for ODE solver
 par.odeSolverAbsTol = 1e-9; % Abs. error tolerance parameter for ODE solver
 par.MaxStep = 1e-2;
 
 % Wave construction parameters
-par.WEC.nw = 100;
+par.WEC.nw = 1000;
 par.wave.rngSeedPhase = 3; % set the seed for the random number generator
 
 % Sea State specification
@@ -68,7 +70,8 @@ par.wave.Hs = Hs(iSS);
 par.wave.Tp = Tp(iSS);
 
 % load remaining parameters
-par = parameters_OLloadSchedule(par);
+par = parameters_OLloadSchedule(par,...
+    'nemohResults_vantHoff2009_20180802.mat','vantHoffTFCoeff.mat');
 
 % Define intial conditions
 y0 = [  0, ...
@@ -83,6 +86,7 @@ tc = logspace(log10(3),log10(30),10);
 % Load control parameters
 par.T_max = 5e6;    % [Nm] PTO reaction torque
 par.dTdt_max = par.T_max/5;
+par.T_min = par.T_max*0;           % [Nm] min PTO reaction torque
 
 % Model predictive control parameters
 par.dt_ctrl = meshVar.dt_ctrl(iVar);            % interval between control updates
@@ -91,6 +95,11 @@ par.MPLS.tp = par.MPLS.tc + 1.5*par.dt_ctrl;      % prediction horizon
 
 %% %%%%%%%%%%%%   COLLECT DATA  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic_1 = tic; % record start time of optimization
+
+% Update initial conditions post ramp
+Tpto = 0.5*(par.T_max+par.T_min);
+temp = model_OLloadSchedule([],y0,Tpto,[],par,4);
+y0 = temp(end,:); clearvars temp
 
 % Perform optimization
 [tMPLS,Tpto] = modelPredictiveLoadScheduling(y0,par);
