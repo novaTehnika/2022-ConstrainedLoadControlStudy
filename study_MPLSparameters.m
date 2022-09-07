@@ -105,12 +105,12 @@ y0 = temp(end,:); clearvars temp
 [tMPLS,Tpto] = modelPredictiveLoadScheduling(y0,par);
 
 % record the average power absorption
-PP = model_OLloadcontrol(tMPLS(1),y0,Tpto,tMPLS(end),par,1);
+PP = model_OLloadSchedule(tMPLS(1),y0,Tpto,tMPLS(end),par,1);
 
 % record the time the optimization took
 dur = toc(tic_1);
 
 % Save results
-save(['data_test_MPLSparameters',num2str(iVar),'.mat'])
+save(['data_test_MPLSparameters_',num2str(iVar),'.mat'])
 
 end

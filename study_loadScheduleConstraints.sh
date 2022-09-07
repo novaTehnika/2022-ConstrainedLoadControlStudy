@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH --nodes=1
 #SBATCH --ntasks=3
-#SBATCH --mem=8gb
+#SBATCH --mem=16gb
 #SBATCH -t 96:00:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=simmo536@umn.edu
@@ -9,7 +9,7 @@
 #SBATCH -o %A_%a.out
 #SBATCH -e %A_%a.err
 
-cd ~/MPCloadControl
+cd ~/2022Q3-Load-scheduling
 module load matlab
 matlab -nodisplay -r \
 "parpool('local',$SLURM_JOB_CPUS_PER_NODE); \
