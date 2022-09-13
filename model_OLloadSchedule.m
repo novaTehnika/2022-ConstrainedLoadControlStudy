@@ -61,16 +61,15 @@ function varargout = model_OLloadSchedule(t,y,Tbar,tp,par,outputConfig)
 
         case 2
             % constraints c <= 0, ceq = 0
+            % limit on rate of change in torque demand
             N = length(Tbar) - 1;
             c = zeros(N,1);
-            if N > 1
-                for n = 2:N
-                    c(n) = abs(Tbar(n+1)-Tbar(n)) ...
-                           - par.dTdt_max*par.dt_ctrl;
-                end
-            else
-                c(1) = 0;
+
+            for n = 1:N
+                c(n) = abs(Tbar(n+1)-Tbar(n)) ...
+                       - par.dTdt_max*par.dt_ctrl;
             end
+
             ceq = [];
             varargout = {c,ceq};
 

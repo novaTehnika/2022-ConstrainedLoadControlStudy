@@ -3,7 +3,7 @@ files = ls;
 nfiles = size(files,1);
 for j = 1:nfiles
 
-    if strfind(files(j,:),"data_test_MPCparameters")
+    if strfind(files(j,:),"data_test_MPLSparameters")
         display(['file ',num2str(j),' of ',num2str(nfiles)])
         load(files(j,:))
 %         PP_array(iVar) = model_OLloadcontrol(tMPC(1),y0,Tpto,tMPC(end),par,1);
@@ -23,7 +23,7 @@ nfiles = size(files,1);
 notDone = 1:100;
 for j = 1:nfiles
 
-    if strfind(files(j,:),"data_test_MPCparameters")
+    if strfind(files(j,:),"data_test_MPLSparameters")
         load(files(j,:))
         [r,c,val] = find(notDone==iVar);
         notDone = [notDone(1:c-1), notDone(c+1:end)];
