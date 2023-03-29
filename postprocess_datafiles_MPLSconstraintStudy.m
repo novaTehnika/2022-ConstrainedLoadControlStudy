@@ -15,7 +15,7 @@ end
 
 
 %%
-
+if 0
 files = ls;
 nfiles = size(files,1);
 notDone = 1:100;
@@ -40,7 +40,7 @@ end
 catch
 end
 
-
+end
 
 %% Transform data to 3D variable mesh
 I = length(deltat_Tmax);
@@ -56,6 +56,7 @@ for i = 1:I
 end
 
 
+return
 
 %%
 figure
@@ -87,7 +88,7 @@ bottomEdge = 1;
 leftEdge = 3;
 width = 3.5625; % one column: 3+9/16, two column: 7.5
 height = 2.75;
-fontSize = 8;
+fontSize = 9;
 lineWidth = 1;
 
 load("data_coulombPTO_dampingStudy_31-Aug-2022_2_slim.mat")
@@ -109,7 +110,7 @@ for k = 1:K
             'filled','x','LineWidth',2,'MarkerEdgeColor',color(i,:))
         
         legLabels(i) = convertCharsToStrings( ...
-            ['turndown rate = ',num2str(deltat_Tmax(i)),'s']);
+            ['min. load trans. time = ',num2str(deltat_Tmax(i)),'s']);
     end
     plot(1e-6*T_c_data(iSS,:),1e-3*PP_w_data(iSS,:),'-k','LineWidth',1)
     legLabels(i+1) = "Coulomb damping";
@@ -118,14 +119,15 @@ for k = 1:K
     ylabel('power (kW)', ...
     'Interpreter','latex','FontSize',fontSize-1,'fontname','Times')
     title(['Mean Power Capture:',newline, ...
-           'Lower Fractional Load Limit of ',num2str(lbFrac(k))],...
+           'Minimum Load Fraction of ',num2str(lbFrac(k))],...
     'Interpreter','latex','FontSize',fontSize,'fontname','Times')
 
     leg = legend(legLabels)
     leg.FontSize = fontSize-1;
     leg.FontName = 'Times';
-    rect = [0.56, 0.2, 0.25, 0.15];
-    set(leg, 'Position', rect)
+%     rect = [0.56, 0.2, 0.25, 0.15];
+%     set(leg, 'Position', rect)
+    set(leg, 'Location', 'best')
     ylim([0 90])
 end
 

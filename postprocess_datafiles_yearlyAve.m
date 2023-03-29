@@ -15,6 +15,7 @@ load('SSdata_HumboltBay_1D.mat', 'weight')
 SS = 1:114;
 
 %%
+if 0
 
 files = ls;
 nfiles = size(files,1);
@@ -36,7 +37,7 @@ for j = 2:length(notDone)
         dur_array(notDone(j)) = nan;
 end
 
-
+end
 %% Transform data to 3D variable mesh
 I = length(SS);
 J = length(T_max);
@@ -55,45 +56,45 @@ for i = 1:I
 end
 
 %% Compare data to prior results for SS7
-black = [0 0 0];
-maroon = [122 0 25]/256;
-gold = [255 204 51]/256;
-blue = [0 75 135]/256;
-orange = [226 100 55]/256;
-green = [63 150 87]/256;
-color = [maroon; gold; blue; orange; green];
-
-bottomEdge = 1;
-leftEdge = 3;
-width = 3.5625; % one column: 3+9/16, two column: 7.5
-height = 2.75;
-fontSize = 8;
-lineWidth = 1;
-
-PP_2D_ss7 = squeeze(PP_3D(7,:,:));
-figure;
-clearvars leg
-for k = 1:K
-    scatter(1e-6*T_max,1e-3*PP_2D_ss7(:,k),50, ...
-        'filled','x','LineWidth',2,'MarkerEdgeColor',color(k,:))
-    hold on
-    legLabels(k) = convertCharsToStrings( ...
-        ['turndown ratio = ',num2str(lbFrac(k))]);
-end
-xlabel('torque, max (MNm)', ...
-'Interpreter','latex','FontSize',fontSize-1,'fontname','Times')
-ylabel('power (kW)', ...
-'Interpreter','latex','FontSize',fontSize-1,'fontname','Times')
-title(['Mean Power Capture:',newline, ...
-       'SS 7'],...
-'Interpreter','latex','FontSize',fontSize,'fontname','Times')
-
-leg = legend(legLabels)
-
-
+% black = [0 0 0];
+% maroon = [122 0 25]/256;
+% gold = [255 204 51]/256;
+% blue = [0 75 135]/256;
+% orange = [226 100 55]/256;
+% green = [63 150 87]/256;
+% color = [maroon; gold; blue; orange; green];
+% 
+% bottomEdge = 1;
+% leftEdge = 3;
+% width = 3.5625; % one column: 3+9/16, two column: 7.5
+% height = 2.75;
+% fontSize = 8;
+% lineWidth = 1;
+% 
+% PP_2D_ss7 = squeeze(PP_3D(7,:,:));
+% figure;
+% clearvars leg
+% for k = 1:K
+%     scatter(1e-6*T_max,1e-3*PP_2D_ss7(:,k),50, ...
+%         'filled','x','LineWidth',2,'MarkerEdgeColor',color(k,:))
+%     hold on
+%     legLabels(k) = convertCharsToStrings( ...
+%         ['turndown ratio = ',num2str(lbFrac(k))]);
+% end
+% xlabel('torque, max (MNm)', ...
+% 'Interpreter','latex','FontSize',fontSize-1,'fontname','Times')
+% ylabel('power (kW)', ...
+% 'Interpreter','latex','FontSize',fontSize-1,'fontname','Times')
+% title(['Mean Power Capture:',newline, ...
+%        'SS 7'],...
+% 'Interpreter','latex','FontSize',fontSize,'fontname','Times')
+% 
+% leg = legend(legLabels)
+% 
+% 
 %%
-figure
-plot(tMPLS,Tpto)
+% figure
+% plot(tMPLS,Tpto)
 
 %% Calculate weighted average power production 
 for j = 1:J
@@ -112,13 +113,19 @@ end
 
 load("data_coulombPTO_dampingStudy_20220927_slim.mat")
 
-nTmax_Coulomb = 100;
+nTmax_Coulomb = 1000;
 Tmax_Coulomb = linspace(min(T_c_data(:)),max(T_max(:)),nTmax_Coulomb);
 
+PP_w_extrap = zeros(114,nTmax_Coulomb);
+for iSS = 1:114
+    PP_w_extrap(iSS,:) = interp1(T_c_data(iSS,:),PP_w_data(iSS,:),Tmax_Coulomb,'linear','extrap');
+end
+PP_w_extrap(iSS,:) = (PP_w_extrap(iSS,:)>0).*PP_w_extrap(iSS,:);
 PP_yearlyAveCoulomb = zeros(length(lbFrac) + 1,nTmax_Coulomb);
 PPmax = 0;
 
 % loop through lower fractional load limit
+allowExtrap = 1;
 for ilbFrac = 1:length(lbFrac) + 1
     % loop through max torque
     for iTmax = 1:nTmax_Coulomb
@@ -127,21 +134,26 @@ for ilbFrac = 1:length(lbFrac) + 1
             % test for lbFrac or fixed load and out of bounds load
             if ilbFrac > length(lbFrac)
                 if T_c_data(iSS,end) < Tmax_Coulomb(iTmax)
-                    PPmax = 0;
+                    if allowExtrap
+                        PPmax = PP_w_extrap(iSS,iTmax);
+                    else
+                        PPmax = 0;
+                    end
                 else
                     PPmax = interp1(T_c_data(iSS,:),PP_w_data(iSS,:),Tmax_Coulomb(iTmax),'linear');
                 end
             else
-                if T_c_data(iSS,end) < lbFrac(ilbFrac)*Tmax_Coulomb(iTmax)
-                    PPmax = 0;
+                if (T_c_data(iSS,end) >= lbFrac(ilbFrac)*Tmax_Coulomb(iTmax)) || allowExtrap
+                    PPmax = max(PP_w_extrap(iSS,Tmax_Coulomb<=Tmax_Coulomb(iTmax) & Tmax_Coulomb>=lbFrac(ilbFrac)*Tmax_Coulomb(iTmax)));
                 else
-                    PPmax = max(PP_w_data(iSS,T_c_data(iSS,:)<=Tmax_Coulomb(iTmax) & T_c_data(iSS,:)>=lbFrac(ilbFrac)*Tmax_Coulomb(iTmax)));
+                    PPmax = 0;
                 end
             end
             PP_yearlyAveCoulomb(ilbFrac,iTmax) = PP_yearlyAveCoulomb(ilbFrac,iTmax) + weight(iSS)/100*PPmax;
         end
     end
 end
+
 %% Plot average power results for one turndown fraction but multiple turndown ratio
 black = [0 0 0];
 maroon = [122 0 25]/256;
@@ -154,8 +166,8 @@ color = [maroon; gold; blue; orange; green];
 bottomEdge = 1;
 leftEdge = 3;
 width = 3.5625; % one column: 3+9/16, two column: 7.5
-height = 2.75;
-fontSize = 8;
+height = 3.25;
+fontSize = 9;
 lineWidth = 1;
 
 clearvars leg
@@ -171,25 +183,57 @@ ax1.FontSize = fontSize-1;
 
 hold on
 
+% dummy plots for legend
+iLeg = 0;
+
 for k = 1:K
-    scatter(1e-6*T_max,1e-3*PP_yearlyAve(:,k),50, ...
-        'filled','x','LineWidth',2,'MarkerEdgeColor',color(k,:))
-    
-    legLabels(k) = convertCharsToStrings( ...
-        ['turndown ratio = ',num2str(lbFrac(k))]);
+    scatter(-99*[1, 0.5],-99*[1, 0.5],50, ...
+        'filled','s','LineWidth',2,...
+        'MarkerEdgeColor',color(k,:),'MarkerFaceColor',color(k,:));
+    iLeg = iLeg+1;
+    legLabels(iLeg) = convertCharsToStrings( ...
+        ['min. load frac. = ',num2str(lbFrac(k))]);
 end
-plot(1e-6*Tmax_Coulomb,1e-3*PP_yearlyAveCoulomb(:),'-k','LineWidth',1)
-legLabels(k+1) = "Coulomb damping";
+
+scatter(-99*[1 1],-99*[1 1],50, ...
+        'filled','x','LineWidth',2,'MarkerEdgeColor','k');
+iLeg = iLeg+1;
+legLabels(iLeg) = convertCharsToStrings('MPC algorithm');
+
+plot(-99*[1 1],-99*[1 1],'-k','LineWidth',1)
+iLeg = iLeg+1;
+legLabels(iLeg) = convertCharsToStrings('Optimal Coulomb damping');
+
+plot(-99*[1 1],-99*[1 1],'--k','LineWidth',1)
+iLeg = iLeg+1;
+legLabels(iLeg) = "Fixed Coulomb damping";
+
+% plot real data
+
+for k = 1:K
+    s(k) = scatter(1e-6*T_max,1e-3*PP_yearlyAve(:,k),50, ...
+        'filled','x','LineWidth',2,...
+        'MarkerEdgeColor',color(k,:),'MarkerFaceColor',color(k,:));
+    s(k).HandleVisibility='off';
+    
+    p(k) = plot(1e-6*Tmax_Coulomb,1e-3*PP_yearlyAveCoulomb(k,:),'-','Color',color(k,:),'LineWidth',1);
+    p(k).HandleVisibility='off';
+end
+p(K+1) = plot(1e-6*Tmax_Coulomb,1e-3*PP_yearlyAveCoulomb(end,:),'--k','LineWidth',1);
+p(K+1).HandleVisibility='off';
+
 xlabel('torque, max (MNm)', ...
 'Interpreter','latex','FontSize',fontSize-1,'fontname','Times')
 ylabel('power (kW)', ...
 'Interpreter','latex','FontSize',fontSize-1,'fontname','Times')
-title(['Mean Power Capture, Yearly'],...
+title(['Mean Power Capture, Yearly Average'],...
 'Interpreter','latex','FontSize',fontSize,'fontname','Times')
 
 leg = legend(legLabels)
 leg.FontSize = fontSize-1;
 leg.FontName = 'Times';
-rect = [0.56, 0.2, 0.25, 0.15];
-set(leg, 'Position', rect)
-% ylim([0 90])
+rect = [0.5, -0.2, 0.25, 0.15];
+% set(leg, 'Position', rect)
+set(leg, 'Location', 'best')
+% set(leg, 'Location', 'southoutside')
+xlim([0 1e-6*max(T_max)])
