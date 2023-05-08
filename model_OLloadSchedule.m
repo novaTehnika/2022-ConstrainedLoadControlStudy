@@ -75,7 +75,7 @@ function varargout = model_OLloadSchedule(t,y,Tbar,tp,par,outputConfig)
 
         case 4
             % run simulation for initial condition following ramp period
-            tspan = par.tstart+[-par.Tramp,0];
+            tspan = par.tstart+[-par.Tramp,0]-par.TrampMPLS;
             Tpto = @(tprime) Tpto_ramp(tprime-tspan(1),Tbar,par.dt_ctrl);
             out = sim_OLloadSchedule(tspan,y,Tpto,par);
             varargout = {out.y};

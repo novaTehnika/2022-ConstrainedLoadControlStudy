@@ -67,7 +67,7 @@ beq = [];
 lb = par.T_min*ones(1,N);
 ub = par.T_max*ones(1,N);
 
-t = par.tstart:dt_ctrl:par.tend;
+t = (par.tstart-par.TrampMPLS):dt_ctrl:par.tend;
 nt = length(t);
 Tpto = zeros(nt,1);
 Tpto(1) = 0.5*(par.T_max+par.T_min);

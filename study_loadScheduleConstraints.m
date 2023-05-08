@@ -30,6 +30,7 @@
 % 07/12/2022 - Changed study variable from maximum rate of change in load 
 % to the minimum time taken to go from zero to max load (dTdt_max to 
 % deltat_Tmax) and updated the calculation of dTdt_max accordingly.
+% 05/08/2023 - added specification for a ramp period for the MPLS algorithm
 %
 % Copyright (C) 2022  Jeremy W. Simmons II
 % 
@@ -57,9 +58,10 @@ addpath([path_models filesep 'Open-loop load schedule PTO'])
 
 %% %%%%%%%%%%%%%%%%   SIMULATION PARAMETERS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Simulation length
-par.Tramp = 250; % [s] excitation force ramp period
-par.tstart = 0; %[s] start time of simulation
-par.tend = 2000; %[s] end time of simulation
+par.Tramp = 150; % [s] excitation force ramp period
+par.TrampMPLS = 200; % [s] MPLS ramp period
+par.tstart = 0; %[s] start time of simulation for results
+par.tend = 2000; %[s] end time of simulation for results
 
 % Solver parameters
 par.odeSolverRelTol = 1e-9; % Rel. error tolerance parameter for ODE solver
@@ -115,8 +117,9 @@ y0 = temp(end,:); clearvars temp
 % Perform optimization
 [tMPLS,Tpto] = modelPredictiveLoadScheduling(y0,par);
 
-% record the average power absorption
-PP = model_OLloadSchedule(tMPLS(1),y0,Tpto,tMPLS(end),par,1);
+% record the average power absorption post MPC ramp
+it_start = find(tMPLS >= par.tstart,1,'first');
+PP = model_OLloadSchedule(tMPLS(it_start),y0,Tpto(it_start:end),tMPLS(end),par,1);
 
 % record the time the optimization took
 dur = toc(tic_1);
