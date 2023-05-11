@@ -58,7 +58,7 @@ function out = sim_OLloadSchedule(tspan,y0,Tpto,par)
     nt = length(t); % number of time steps
 
     % Extract system states from simulation results
-%     out.t = t;
+    out.t = t;
     out.y = y;
     
 %     out.theta = y(:,1); % [rad] position of the WEC

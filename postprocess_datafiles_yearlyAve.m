@@ -42,6 +42,7 @@ end
 I = length(SS);
 J = length(T_max);
 K = length(lbFrac);
+test = 1;
 for i = 1:I
     for j = 1:J
         for k = 1:K
@@ -50,10 +51,16 @@ for i = 1:I
             SS_3D(i,j,k) = NDmeshVar.SS(m);
             T_max_3D(i,j,k) = NDmeshVar.T_max(m);
             lbFrac_3D(i,j,k) = NDmeshVar.lbFrac(m);
-            III(i,j,k) = m;
+            test = (NDmeshVar.SS(m) == SS(i)) ...
+                && (NDmeshVar.T_max(m) == T_max(j)) ...
+                && (NDmeshVar.lbFrac(m) == lbFrac(k)) ...
+                && test;
         end
     end
 end
+
+if ~test; error('indexing incorrect'); end
+clearvars test
 
 %% Compare data to prior results for SS7
 % black = [0 0 0];
@@ -111,28 +118,36 @@ end
 % case 4: lower frac. load limit of 0.75
 % case 5: fixed load across all sea states
 
-load("data_coulombPTO_dampingStudy_20220927_slim.mat")
+% load("data_coulombPTO_dampingStudy_20220927_slim.mat")
+load("data_coulombPTO_dampingStudy_08-May-2023_slim.mat")
 
 nTmax_Coulomb = 1000;
 Tmax_Coulomb = linspace(min(T_c_data(:)),max(T_max(:)),nTmax_Coulomb);
 
+% Map Coulomb damping power results to "Tmax_Coulomb" with extrapolation
+% beyond the maximum the limit of "T_c_data" for each sea state
 PP_w_extrap = zeros(114,nTmax_Coulomb);
 for iSS = 1:114
     PP_w_extrap(iSS,:) = interp1(T_c_data(iSS,:),PP_w_data(iSS,:),Tmax_Coulomb,'linear','extrap');
+    PP_w_extrap(iSS,:) = (PP_w_extrap(iSS,:)>0).*PP_w_extrap(iSS,:);
 end
-PP_w_extrap(iSS,:) = (PP_w_extrap(iSS,:)>0).*PP_w_extrap(iSS,:);
+
+% initalize
 PP_yearlyAveCoulomb = zeros(length(lbFrac) + 1,nTmax_Coulomb);
 PPmax = 0;
 
-% loop through lower fractional load limit
+% specify whether extrapolated data will count toward the weighted average
 allowExtrap = 1;
+
+% loop through lower fractional load limit
 for ilbFrac = 1:length(lbFrac) + 1
     % loop through max torque
     for iTmax = 1:nTmax_Coulomb
         % loop through sea state
         for iSS = 1:114
-            % test for lbFrac or fixed load and out of bounds load
+            % test for lbFrac or fixed load
             if ilbFrac > length(lbFrac)
+                % test for load out of bounds of "T_c_data"
                 if T_c_data(iSS,end) < Tmax_Coulomb(iTmax)
                     if allowExtrap
                         PPmax = PP_w_extrap(iSS,iTmax);
@@ -143,8 +158,17 @@ for ilbFrac = 1:length(lbFrac) + 1
                     PPmax = interp1(T_c_data(iSS,:),PP_w_data(iSS,:),Tmax_Coulomb(iTmax),'linear');
                 end
             else
-                if (T_c_data(iSS,end) >= lbFrac(ilbFrac)*Tmax_Coulomb(iTmax)) || allowExtrap
-                    PPmax = max(PP_w_extrap(iSS,Tmax_Coulomb<=Tmax_Coulomb(iTmax) & Tmax_Coulomb>=lbFrac(ilbFrac)*Tmax_Coulomb(iTmax)));
+                % test for the T_c_data spanning the legal load range
+                % cond1 - the upper bound for T_c_data exceeds the maximum load
+                % cond2 - extrapolation is allowed
+                if (T_c_data(iSS,end) >= Tmax_Coulomb(iTmax)) || allowExtrap
+                    % filter array to include 
+                    % loads less than or equal to max the load (cond1) and 
+                    % loads greater than or equal to the min load (cond2)
+                    cond1 = Tmax_Coulomb <= Tmax_Coulomb(iTmax);
+                    cond2 = Tmax_Coulomb >= lbFrac(ilbFrac)*Tmax_Coulomb(iTmax);
+                    PPfilt = PP_w_extrap(iSS,cond1 & cond2);
+                    PPmax = max(PPfilt);
                 else
                     PPmax = 0;
                 end

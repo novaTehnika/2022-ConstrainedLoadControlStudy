@@ -69,13 +69,21 @@ for i = 1:length(tc_rm)
 end
 
 %%
+J = length(dt_ctrl);
+K = length(tc);
+test = 1;
 for j = 1:length(dt_ctrl)
     for k = 1:length(tc)
         i = length(tc)*(j-1) + k;
         PP_2D(k,j) = PP_array(i);
         dur_2D(k,j) = dur_array(i);
+        test = (meshVar.tc(i) == tc(k)) && (meshVar.dt_ctrl(i) == dt_ctrl(k)) && test;
     end
 end
+
+if ~test; error('indexing incorrect'); end
+clearvars test
+
 bottomEdge = 1;
 leftEdge = 3;
 width = 3.5625; % one column: 3+9/16, two column: 7.5
