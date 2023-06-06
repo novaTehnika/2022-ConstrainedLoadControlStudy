@@ -9,7 +9,7 @@
 #SBATCH -o %A_%a.out
 #SBATCH -e %A_%a.err
 
-cd ~/2022Q3-Load-scheduling
+cd ~/2022-ConstrainedLoadControlStudy
 module load matlab
 matlab -nodisplay -r \
 "parpool('local',$SLURM_JOB_CPUS_PER_NODE); \
