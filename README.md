@@ -7,6 +7,7 @@ These purpose of these design studies is to characterize the potential performan
 Model predictive control (MPC) is used to provide a constrainted nonlinear optimal load control.
 
 Terminology:
+
 Note that the terms 'load schedule' and 'model predicitve load scheduling' ('MPLS') may be used throughout scripts and file names.
 The use of these terms came from uncertainty about whether it was appropriate to refer to load control algorithm as perfroming a control function or a scheduling function.
 'Control' was eventually adopted by naming conventions remained in the project. 
