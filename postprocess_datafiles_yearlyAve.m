@@ -222,15 +222,15 @@ end
 scatter(-99*[1 1],-99*[1 1],50, ...
         'filled','x','LineWidth',2,'MarkerEdgeColor','k');
 iLeg = iLeg+1;
-legLabels(iLeg) = convertCharsToStrings('MPC algorithm');
+legLabels(iLeg) = convertCharsToStrings('model predictive control');
 
 plot(-99*[1 1],-99*[1 1],'-k','LineWidth',1)
 iLeg = iLeg+1;
-legLabels(iLeg) = convertCharsToStrings('Optimal Coulomb damping');
+legLabels(iLeg) = convertCharsToStrings('optimal Coulomb damping');
 
 plot(-99*[1 1],-99*[1 1],'--k','LineWidth',1)
 iLeg = iLeg+1;
-legLabels(iLeg) = "Fixed Coulomb damping";
+legLabels(iLeg) = "fixed Coulomb damping";
 
 % plot real data
 
